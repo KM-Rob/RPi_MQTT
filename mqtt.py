@@ -4,9 +4,9 @@ from time import strftime
 
 #Dane do polaczenia z baza danych
 conn = sql.connect(host="localhost", 
-                   user="****",
-                   passwd="****",
-                   db="****")
+                   user="***",
+                   passwd="***",
+                   db="***")
                        
 #Informacja o polaczeniu MQTT
 def on_connect(client, userdata, flags, rc):
@@ -32,49 +32,46 @@ def on_message(client, userdata, message):
         client.publish("SendTime", czas)
         print("Wyslano czas: {}".format(czas))
     else:
-        #Wpisanie informacji do bazy danych dla BME280    
-        if(message.topic == "BME280"):
-            temp,wilg,cisn,ID = [str(h) for h in message.payload.split(',')]
+        #Wpisanie informacji do bazy danych dla BME680    
+        if(message.topic == "BME680"):
+            temp,wilg,cisn,gaz,ID = [str(h) for h in message.payload.decode("utf-8").split(',')]
             
             insert_temp = "INSERT INTO Temperatura (ID_Czujnika,Wartosc) values (%s,%s)"
             insert_wilg = "INSERT INTO Wilgotnosc (ID_Czujnika,Wartosc) values (%s,%s)"
             insert_cisn = "INSERT INTO Cisnienie (ID_Czujnika,Wartosc) values (%s,%s)"
+            insert_gaz = "INSERT INTO Gaz (ID_Czujnika,Wartosc) values (%s,%s)"
             
             #Wykonanie polecen SQL
             try:
                 x.execute(insert_temp,(ID,temp))
                 x.execute(insert_wilg,(ID,wilg))
                 x.execute(insert_cisn,(ID,cisn))
+                x.execute(insert_gaz,(ID,gaz))
                 conn.commit()  #Zatwierdzenie dokonanych zmian 
                 print("Wpisano do bazy danych: {}, temat: {}".format(str(message.payload), str(message.topic)))
             except sql.Error as e:
                 print("Error: {}".format(e))
                 
-        #Wpisanie informacji do bazy danych w przypadku braku BME280
+        #Wpisanie informacji do bazy danych w przypadku braku BME680
         else:
-            wiadomosc,ID = [str(h) for h in message.payload.split(',')]
+            wiadomosc,ID = [str(h) for h in message.payload.decode("utf-8").split(',')]
         
             if(message.topic == "Temperatura"):
                 insert_ = "INSERT INTO Temperatura (ID_Czujnika,Wartosc) values (%s,%s)"
             if(message.topic == "Oswietlenie"):
                 insert_ = "INSERT INTO Oswietlenie (ID_Czujnika,Wartosc) values (%s,%s)"
-            if(message.topic == "Glosnosc"):
-                insert_ = "INSERT INTO Glosnosc (ID_Czujnika,Wartosc) values (%s,%s)"
+            if(message.topic == "Kontaktron"):
+                insert_ = "INSERT INTO Kontaktron (ID_Czujnika,Wartosc) values (%s,%s)"
             
             #Wykonanie polecen SQL
             try:
-                if(message.topic == "Akumulator"):
-                    update_ = "UPDATE Akumulatory SET Status = %s WHERE ID_Urzadzenia = %s"
-                    x.execute(update_,(wiadomosc,ID))
-                else:
-                    x.execute(insert_,(ID,wiadomosc)) 
+                x.execute(insert_,(ID,wiadomosc)) 
                 conn.commit()  #Zatwierdzenie dokonanych zmian 
                 print("Wpisano do bazy danych: {}, temat: {}".format(str(message.payload), str(message.topic)))
             except sql.Error as e:
                 print("Error: {}".format(e))
 
 def main():
-
     #Polaczenie MQTT
     Broker = "localhost"           #Ip Brokera
     client = mqtt.Client()         #Utworzenie clienta
@@ -82,11 +79,10 @@ def main():
     client.connect(Broker)         #Polaczenie clienta z brokerem MQTT
  
     #Subskrypcja tematu MQTT
-    client.subscribe("BME280")
+    client.subscribe("BME680")
     client.subscribe("Temperatura")
     client.subscribe("Oswietlenie")
-    client.subscribe("Glosnosc")
-    client.subscribe("Akumulator")
+    client.subscribe("Kontaktron")
     client.subscribe("GetTime")
     
     client.on_message = on_message #Odebranie wiadomosci i jej przetworzenie
