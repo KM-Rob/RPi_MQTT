@@ -1,7 +1,7 @@
 [Desktop Entry]
 Encoding=UTF-8
 Name=Autostart_MQTT
-Exec=lxterminal -e "sudo python /home/pi/Documents/mqtt_f.py"
+Exec=lxterminal -e "sudo python /home/pi/Desktop/PM.py & sudo python /home/pi/Desktop/mqtt.py"
 Icon=lxterminal
 Type=Application
 Categories=Utility;
